@@ -1,7 +1,11 @@
 
 pipeline {
 	agent any
-
+    
+     environment {
+    NEXUS_DOCKER_MR_REGISTRY = 'localhost:8081/repository/mr/'
+    NEXUS_DOCKER_MAIN_REGISTRY = 'localhost:8081/repository/main/'
+  }
 	stages {
 		stage('Checkstyle') {
 			when {
