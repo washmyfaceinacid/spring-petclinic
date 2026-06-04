@@ -4,8 +4,10 @@ pipeline {
 
 	environment {
 		APP_NAME = 'spring-petclinic'
-		NEXUS_DOCKER_MR_REGISTRY = 'localhost:8081/repository/mr'
-		NEXUS_DOCKER_MAIN_REGISTRY = 'localhost:8081/repository/main'
+		NEXUS_DOCKER_MR_REGISTRY = 'localhost:5000'
+		NEXUS_DOCKER_MAIN_REGISTRY = 'localhost:5000'
+		NEXUS_DOCKER_MR_REPOSITORY = 'mr'
+		NEXUS_DOCKER_MAIN_REPOSITORY = 'main'
 	}
 	stages {
 		stage('Checkout') {
@@ -55,8 +57,8 @@ pipeline {
 						SHORT_COMMIT=$(git rev-parse --short=7 HEAD)
 						docker build -t "${APP_NAME}:${SHORT_COMMIT}" .
 						docker login "$NEXUS_DOCKER_REGISTRY" -u "$NEXUS_USER" -p "$NEXUS_PASSWORD"
-						docker tag "${APP_NAME}:${SHORT_COMMIT}" "$NEXUS_DOCKER_REGISTRY/${APP_NAME}:${SHORT_COMMIT}"
-						docker push "$NEXUS_DOCKER_REGISTRY/${APP_NAME}:${SHORT_COMMIT}"
+						docker tag "${APP_NAME}:${SHORT_COMMIT}" "$NEXUS_DOCKER_REGISTRY/${NEXUS_DOCKER_MR_REPOSITORY}/${APP_NAME}:${SHORT_COMMIT}"
+						docker push "$NEXUS_DOCKER_REGISTRY/${NEXUS_DOCKER_MR_REPOSITORY}/${APP_NAME}:${SHORT_COMMIT}"
 					'''
 					}
 				}
@@ -76,8 +78,8 @@ pipeline {
 						SHORT_COMMIT=$(git rev-parse --short=7 HEAD)
 						docker build -t "${APP_NAME}:${SHORT_COMMIT}" .
 						docker login "$NEXUS_DOCKER_REGISTRY" -u "$NEXUS_USER" -p "$NEXUS_PASSWORD"
-						docker tag "${APP_NAME}:${SHORT_COMMIT}" "$NEXUS_DOCKER_REGISTRY/${APP_NAME}:${SHORT_COMMIT}"
-						docker push "$NEXUS_DOCKER_REGISTRY/${APP_NAME}:${SHORT_COMMIT}"
+						docker tag "${APP_NAME}:${SHORT_COMMIT}" "$NEXUS_DOCKER_REGISTRY/${NEXUS_DOCKER_MAIN_REPOSITORY}/${APP_NAME}:${SHORT_COMMIT}"
+						docker push "$NEXUS_DOCKER_REGISTRY/${NEXUS_DOCKER_MAIN_REPOSITORY}/${APP_NAME}:${SHORT_COMMIT}"
 					'''
 					}
 				}
