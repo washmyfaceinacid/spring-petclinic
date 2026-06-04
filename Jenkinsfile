@@ -1,12 +1,17 @@
 
 pipeline {
 	agent any
-    
-     environment {
-    NEXUS_DOCKER_MR_REGISTRY = 'localhost:8081/repository/mr/'
-    NEXUS_DOCKER_MAIN_REGISTRY = 'localhost:8081/repository/main/'
-  }
+
+	environment {
+		APP_NAME = 'spring-petclinic'
+	}
 	stages {
+		stage('Checkout') {
+			steps {
+				checkout scm
+			}
+		}
+
 		stage('Checkstyle') {
 			when {
 				changeRequest()
@@ -41,18 +46,15 @@ pipeline {
 			}
 			steps {
 				sh './mvnw -B -DskipTests package'
-				script {
-					def shortCommit = sh(script: 'git rev-parse --short=7 HEAD', returnStdout: true).trim()
-					def registry = env.NEXUS_DOCKER_MR_REGISTRY
-
-					if (!registry) {
-						error('Set NEXUS_DOCKER_MR_REGISTRY in the Jenkins job or agent environment.')
-					}
-
-					docker.withRegistry("https://${registry}", 'nexus-docker') {
-						def image = docker.build("spring-petclinic:${shortCommit}", '.')
-						image.push(shortCommit)
-					}
+				withCredentials([usernamePassword(credentialsId: 'nexus-docker', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASSWORD')]) {
+					sh '''
+						set -eu
+						SHORT_COMMIT=$(git rev-parse --short=7 HEAD)
+						docker login "$NEXUS_DOCKER_MR_REGISTRY" -u "$NEXUS_USER" -p "$NEXUS_PASSWORD"
+						docker build -t "${APP_NAME}:${SHORT_COMMIT}" .
+						docker tag "${APP_NAME}:${SHORT_COMMIT}" "$NEXUS_DOCKER_MR_REGISTRY/${APP_NAME}:${SHORT_COMMIT}"
+						docker push "$NEXUS_DOCKER_MR_REGISTRY/${APP_NAME}:${SHORT_COMMIT}"
+					'''
 				}
 			}
 		}
@@ -63,18 +65,15 @@ pipeline {
 			}
 			steps {
 				sh './mvnw -B -DskipTests package'
-				script {
-					def shortCommit = sh(script: 'git rev-parse --short=7 HEAD', returnStdout: true).trim()
-					def registry = env.NEXUS_DOCKER_MAIN_REGISTRY
-
-					if (!registry) {
-						error('Set NEXUS_DOCKER_MAIN_REGISTRY in the Jenkins job or agent environment.')
-					}
-
-					docker.withRegistry("https://${registry}", 'nexus-docker') {
-						def image = docker.build("spring-petclinic:${shortCommit}", '.')
-						image.push(shortCommit)
-					}
+				withCredentials([usernamePassword(credentialsId: 'nexus-docker', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASSWORD')]) {
+					sh '''
+						set -eu
+						SHORT_COMMIT=$(git rev-parse --short=7 HEAD)
+						docker login "$NEXUS_DOCKER_MAIN_REGISTRY" -u "$NEXUS_USER" -p "$NEXUS_PASSWORD"
+						docker build -t "${APP_NAME}:${SHORT_COMMIT}" .
+						docker tag "${APP_NAME}:${SHORT_COMMIT}" "$NEXUS_DOCKER_MAIN_REGISTRY/${APP_NAME}:${SHORT_COMMIT}"
+						docker push "$NEXUS_DOCKER_MAIN_REGISTRY/${APP_NAME}:${SHORT_COMMIT}"
+					'''
 				}
 			}
 		}
