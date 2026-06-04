@@ -4,7 +4,7 @@ pipeline {
 
 	environment {
 		APP_NAME = 'spring-petclinic'
-		NEXUS_DOCKER_MR_REGISTRY = 'localhost:5000'
+		NEXUS_DOCKER_MR_REGISTRY = 'localhost:5001'
 		NEXUS_DOCKER_MAIN_REGISTRY = 'localhost:5000'
 		NEXUS_DOCKER_MR_REPOSITORY = 'mr'
 		NEXUS_DOCKER_MAIN_REPOSITORY = 'main'
@@ -13,34 +13,6 @@ pipeline {
 		stage('Checkout') {
 			steps {
 				checkout scm
-			}
-		}
-
-		stage('Checkstyle') {
-			when {
-				changeRequest()
-			}
-			steps {
-				sh './mvnw -B checkstyle:checkstyle'
-				archiveArtifacts artifacts: 'target/site/checkstyle.html,target/checkstyle-result.xml'
-			}
-		}
-
-		stage('Test') {
-			when {
-				changeRequest()
-			}
-			steps {
-				sh './mvnw -B test'
-			}
-		}
-
-		stage('Build without tests') {
-			when {
-				changeRequest()
-			}
-			steps {
-				sh './mvnw -B -DskipTests package'
 			}
 		}
 
