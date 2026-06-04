@@ -4,6 +4,8 @@ pipeline {
 
 	environment {
 		APP_NAME = 'spring-petclinic'
+		NEXUS_DOCKER_MR_REGISTRY = 'localhost:8081/repository/mr'
+		NEXUS_DOCKER_MAIN_REGISTRY = 'localhost:8081/repository/main'
 	}
 	stages {
 		stage('Checkout') {
@@ -47,14 +49,16 @@ pipeline {
 			steps {
 				sh './mvnw -B -DskipTests package'
 				withCredentials([usernamePassword(credentialsId: 'nexus-docker', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASSWORD')]) {
+					withEnv(["NEXUS_DOCKER_REGISTRY=${env.NEXUS_DOCKER_MR_REGISTRY}"] ) {
 					sh '''
 						set -eu
 						SHORT_COMMIT=$(git rev-parse --short=7 HEAD)
-						docker login "$NEXUS_DOCKER_MR_REGISTRY" -u "$NEXUS_USER" -p "$NEXUS_PASSWORD"
 						docker build -t "${APP_NAME}:${SHORT_COMMIT}" .
-						docker tag "${APP_NAME}:${SHORT_COMMIT}" "$NEXUS_DOCKER_MR_REGISTRY/${APP_NAME}:${SHORT_COMMIT}"
-						docker push "$NEXUS_DOCKER_MR_REGISTRY/${APP_NAME}:${SHORT_COMMIT}"
+						docker login "$NEXUS_DOCKER_REGISTRY" -u "$NEXUS_USER" -p "$NEXUS_PASSWORD"
+						docker tag "${APP_NAME}:${SHORT_COMMIT}" "$NEXUS_DOCKER_REGISTRY/${APP_NAME}:${SHORT_COMMIT}"
+						docker push "$NEXUS_DOCKER_REGISTRY/${APP_NAME}:${SHORT_COMMIT}"
 					'''
+					}
 				}
 			}
 		}
@@ -66,14 +70,16 @@ pipeline {
 			steps {
 				sh './mvnw -B -DskipTests package'
 				withCredentials([usernamePassword(credentialsId: 'nexus-docker', usernameVariable: 'NEXUS_USER', passwordVariable: 'NEXUS_PASSWORD')]) {
+					withEnv(["NEXUS_DOCKER_REGISTRY=${env.NEXUS_DOCKER_MAIN_REGISTRY}"] ) {
 					sh '''
 						set -eu
 						SHORT_COMMIT=$(git rev-parse --short=7 HEAD)
-						docker login "$NEXUS_DOCKER_MAIN_REGISTRY" -u "$NEXUS_USER" -p "$NEXUS_PASSWORD"
 						docker build -t "${APP_NAME}:${SHORT_COMMIT}" .
-						docker tag "${APP_NAME}:${SHORT_COMMIT}" "$NEXUS_DOCKER_MAIN_REGISTRY/${APP_NAME}:${SHORT_COMMIT}"
-						docker push "$NEXUS_DOCKER_MAIN_REGISTRY/${APP_NAME}:${SHORT_COMMIT}"
+						docker login "$NEXUS_DOCKER_REGISTRY" -u "$NEXUS_USER" -p "$NEXUS_PASSWORD"
+						docker tag "${APP_NAME}:${SHORT_COMMIT}" "$NEXUS_DOCKER_REGISTRY/${APP_NAME}:${SHORT_COMMIT}"
+						docker push "$NEXUS_DOCKER_REGISTRY/${APP_NAME}:${SHORT_COMMIT}"
 					'''
+					}
 				}
 			}
 		}
